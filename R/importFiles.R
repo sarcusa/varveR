@@ -7,7 +7,7 @@
 #' @import magrittr
 #' @param filename the path to a shape file
 #' @return A data.frame with the varve data
-readVarveShapefile <- function(filename,codeCol = "conf"){
+readVarveShapefile <- function(filename,codeCol = "conf",varveDir = "vertical"){
 shape <-  sf::st_read(filename,quiet = TRUE)
 
 varveCoords <- data.frame(x1 = unlist(lapply(shape$geometry,"[[",1)),
@@ -15,10 +15,17 @@ varveCoords <- data.frame(x1 = unlist(lapply(shape$geometry,"[[",1)),
                           y1 = unlist(lapply(shape$geometry,"[[",3)),
                           y2 = unlist(lapply(shape$geometry,"[[",4)))
 
+if(varveDir == "vertical"){
 varves <- varveCoords %>%
   dplyr::arrange(desc(y1)) %>%
   dplyr::mutate(count = seq_along(y1)) %>%
   dplyr::mutate(thick = abs(y1-y2))
+}else if(varveDir == "horizontal"){
+  varves <- varveCoords %>%
+    dplyr::arrange(desc(x1)) %>%
+    dplyr::mutate(count = seq_along(x1)) %>%
+    dplyr::mutate(thick = abs(x1-x2))
+}
 
 out <- dplyr::select(varves,count,thick)
 
