@@ -82,7 +82,7 @@ readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol 
   return(out)
 }
 
-readVarveDir <- function(directory = NULL,codeCol = c("conf","VarveID"),varveDir = "vertical",markerCol = c("Marker","Markers")){
+readVarveDir <- function(directory = NULL,codeCol = c("conf","VarveID"),varveTop = "top",markerCol = c("Marker","Markers"),scaleToThickness = NA){
 if(is.null(directory)){
   print("Select a file in the desired directory")
   directory <- dirname(file.choose())
@@ -91,7 +91,7 @@ if(is.null(directory)){
   f2g <- list.files(directory,pattern = "*.shp")
   vOut <- vector(mode = "list",length = length(f2g))
   for(i in 1:length(f2g)){
-    vOut[[i]] <- readVarveShapefile(file.path(directory,f2g[i]),codeCol = codeCol,varveDir = varveDir,markerCol = markerCol)
+    vOut[[i]] <- readVarveShapefile(file.path(directory,f2g[i]),codeCol = codeCol,varveTop = varveTop,markerCol = markerCol,scaleToThickness = scaleToThickness)
 
   }
   names(vOut) <- f2g
@@ -153,26 +153,84 @@ return(secOrder)
 }
 
 combineSectionsByMarkerLayer <- function(sortedSequence){
+#presently tries to handle multiple marker layer options stochastically.
+
 
 #build a giant, concatenated dataframe
-  allCounts <- dplyr::bind_rows(sortedSequence, .id = "column_label")
+  allCounts <- dplyr::bind_rows(sortedSequence, .id = "section")
+  sections <- unique(allCounts$section)
 
 #get all the markerlayer names.
   mln <- na.omit(unique(allCounts$markers))
+
+  #see if there are multiple marker layers that connect sections
+  nMark <- allCounts %>%
+    group_by(section) %>%
+    summarize(markerLayers = sum(!is.na(markers))) %>%
+    arrange(match(section,sections))
+
+  nMark$expected <- 2
+  nMark$expected[c(1,nrow(nMark))] <- 1
+  #find sections with "extra" markers
+  extra <- which(nMark$markerLayers-nMark$expected > 0)
+
+  if(length(extra)>0){
+    #look for similar pairs.
+    extraCounts <- dplyr::bind_rows(sortedSequence[extra], .id = "section") %>%
+      group_by(markers) %>%
+      summarize(nMark = n())
+
+    #summarize into a 2 column matrix, only one is needed.
+    extraMarks <- matrix(na.omit(extraCounts$markers[extraCounts$nMark>1]),ncol = 2,byrow = T)
+
+
+    for(i in 1:nrow(extraMarks)){
+      mln <- setdiff(mln,sample(extraMarks[i,],1)) #remove one at random.
+    }
+  }
 
 #start at the top to the first markerlayer
   sp <- min(which(allCounts$markers==mln[1]))
   combSeq <- allCounts[1:sp,]
 
+  #Deal with intermediate sections
   for(n in 2:length(mln)){
     #find second instance of previous markerlayer,
-    sp <- max(which(allCounts$markers==mln[n-1]))
+    st <- max(which(allCounts$markers==mln[n-1]))
 
+    #find first instance of next marker layer.
+    sp <- min(which(allCounts$markers==mln[n]))
 
-#    and firs
+    if(sp <= st){#that's bad, markers out of order
+      stop(paste("marker layers",mln[n-1],"&",mln[n],"out of order"))
+      }
 
-
+    combSeq <- bind_rows(combSeq,allCounts[(st+1):sp,])
   }
 
 
+  #Then append the bottom section
+  st <- max(which(allCounts$markers==mln[n]))
+  combSeq <- bind_rows(combSeq,allCounts[(st+1):nrow(allCounts),])
+
+#rename and extend tibble
+combSeq <- combSeq %>%
+  mutate(sectionCounts = count) %>%
+  mutate(count = seq_along(count))
+
+
+plotCompositeSequence(combSeq)
+return(combSeq)
+
+
+
 }
+
+plotCompositeSequence <- function(compSeq){
+  colourCount = length(unique(compSeq$section))
+  getPalette = colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))
+
+  return(ggplot(compSeq)+geom_line(aes(x = 1950-count, y = thick,color=section))+theme_bw()+scale_colour_manual(values = getPalette(colourCount)))
+}
+
+
