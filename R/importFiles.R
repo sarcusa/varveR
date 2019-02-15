@@ -5,6 +5,10 @@
 #' @importFrom sf st_read
 #' @import dplyr tibble magrittr
 #' @param filename the path to a shape file
+#' @param codeCol name of the column of varve confidence ratings. Can be a single and or multiple strings in a vector. Default = c("conf","VarveID")
+#' @param markerCol name of the column of marker layer names. Can be a single and or multiple strings in a vector. Default = c("Marker","Markers")
+#' @param varveTop where is the top of the varve sequence on the shape file. Options are "top","bottom","left","right". Default = "top".
+#' @param scaleToThickness Value to scale the sum of the measurements. NA retains the scale in the .shp file.
 #' @return A data.frame with the varve data
 readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),varveTop = "top",scaleToThickness = NA){
   shape <-  sf::st_read(filename,quiet = TRUE)
@@ -82,7 +86,17 @@ readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol 
   return(out)
 }
 
-readVarveDir <- function(directory = NULL,codeCol = c("conf","VarveID"),varveTop = "top",markerCol = c("Marker","Markers"),scaleToThickness = NA){
+#' @export
+#' @author Nick McKay
+#' @title Read multiple varve sequences thicknesses from a directory of shape files
+#' @description Reads in a directory of varve thicknesses files, using readVarveShapefile.
+#' @param directory the path to to the directory. Leaving it blank will open a file chooser.
+#' @param codeCol name of the column of varve confidence ratings. Can be a single and or multiple strings in a vector. Default = c("conf","VarveID")
+#' @param markerCol name of the column of marker layer names. Can be a single and or multiple strings in a vector. Default = c("Marker","Markers")
+#' @param varveTop where is the top of the varve sequence on the shape file. Options are "top","bottom","left","right". Default = "top".
+#' @param scaleToThickness Value to scale the sum of the measurements. NA retains the scale in the .shp file.
+#' @return A list of data.frames with the varve data
+readVarveDirectory <- function(directory = NULL,codeCol = c("conf","VarveID"),varveTop = "top",markerCol = c("Marker","Markers"),scaleToThickness = NA){
 if(is.null(directory)){
   print("Select a file in the desired directory")
   directory <- dirname(file.choose())
@@ -98,7 +112,13 @@ if(is.null(directory)){
 return(vOut)
 }
 
-
+#' @export
+#' @author Nick McKay
+#' @title Heuristically determine varve sequence order by marker layers
+#' @description Tries to determine the order of the sequence based on the marker layers
+#' @import dplyr
+#' @param sequence a list of varve data.frames in any arbitrary order
+#' @return A vector of indices with the sequence order
 determineMarkerLayerOrder <- function(sequence){
 
   #take a guess at top and bottom of sequence:
@@ -152,6 +172,13 @@ return(secOrder)
 
 }
 
+#' @export
+#' @author Nick McKay
+#' @title Heuristically determine varve sequence order by marker layers
+#' @description combines sections into sequence
+#' @import dplyr
+#' @param sortedSequence a list of varve data.frames in stratigraphic order
+#' @return A data.frame of the full varve sequence.
 combineSectionsByMarkerLayer <- function(sortedSequence){
 #presently tries to handle multiple marker layer options stochastically.
 
