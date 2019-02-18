@@ -246,18 +246,18 @@ combSeq <- combSeq %>%
   mutate(count = seq_along(count))
 
 
-plotCompositeSequence(combSeq)
 return(combSeq)
 
 
 
 }
 
+#' @export
 plotCompositeSequence <- function(compSeq){
   colourCount = length(unique(compSeq$section))
   getPalette = colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))
 
-  return(ggplot(compSeq)+geom_line(aes(x = 1950-count, y = thick,color=section))+theme_bw()+scale_colour_manual(values = getPalette(colourCount)))
+  return(ggplot(compSeq)+geom_line(aes(x = count, y = thick,color=section))+theme_bw()+scale_colour_manual(values = getPalette(colourCount)))
 }
 
 

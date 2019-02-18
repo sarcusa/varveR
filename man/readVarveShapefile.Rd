@@ -4,10 +4,20 @@
 \alias{readVarveShapefile}
 \title{Read varve thicknesses from shape file}
 \usage{
-readVarveShapefile(filename, codeCol = "conf")
+readVarveShapefile(filename, codeCol = c("conf", "VarveID"),
+  markerCol = c("Marker", "Markers"), varveTop = "top",
+  scaleToThickness = NA)
 }
 \arguments{
 \item{filename}{the path to a shape file}
+
+\item{codeCol}{name of the column of varve confidence ratings. Can be a single and or multiple strings in a vector. Default = c("conf","VarveID")}
+
+\item{markerCol}{name of the column of marker layer names. Can be a single and or multiple strings in a vector. Default = c("Marker","Markers")}
+
+\item{varveTop}{where is the top of the varve sequence on the shape file. Options are "top","bottom","left","right". Default = "top".}
+
+\item{scaleToThickness}{Value to scale the sum of the measurements. NA retains the scale in the .shp file.}
 }
 \value{
 A data.frame with the varve data

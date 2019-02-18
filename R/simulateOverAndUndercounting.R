@@ -1,3 +1,4 @@
+#' @export
 translateCodesToProbabilities <- function(compSeq,translationTable,baselineProb = 0.05){
 compSeq$ocProb <- baselineProb -> compSeq$ucProb
 for(i in 1:nrow(translationTable)){
@@ -106,6 +107,8 @@ simulateOverAndUndercounting = function(compSeq){
 
 }
 
+
+#' @export
 generateThicknessEnsemble <- function(compSeq,nEns = 1000){
   ensThick <- matrix(NA,nrow = 2*nrow(compSeq),ncol = nEns)
   pb <- txtProgressBar(min=1,max=nEns,style=3)
@@ -123,15 +126,21 @@ for(i in 1:nEns){
 }
 #
 # library(geoChronR)
- plotTimeseriesEnsRibbons(X = seq(1,2504),Y = test) %>%
- plotTimeseriesEnsLines(X = seq(1,2504),Y = test,maxPlotN = 2,color = "red")
-ensThick <- ensThick*(1500/sum(ensThick[,1],na.rm = TRUE))
+#  plotTimeseriesEnsRibbons(X = seq(1,2504),Y = test) %>%
+#  plotTimeseriesEnsLines(X = seq(1,2504),Y = test,maxPlotN = 2,color = "red")
+# ensThick <- ensThick*(1500/sum(ensThick[,1],na.rm = TRUE))
 
 
-createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq_len(nrow(ensThick)+1),ageUnits, depthUnits, addToLiPD = NA){
-  ensThick <- rbind(rep(0,times = ncol(ensThick)), ensThick)
+#' @export
+createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq(1,nrow(ensThick)), addToLiPD = NA,startAtZero = TRUE){
+  if(startAtZero){
+  ensThick <- rbind(matrix(0,ncol = ncol(ensThick),nrow = 1), ensThick)
+  }
+
   cumEns <- apply(ensThick,2,cumsum)
   depthVec <- seq(from = 0, to = max(cumEns,na.rm = TRUE),length.out = nrow(cumEns))
+
+
 
   ageEns <- apply(cumEns,2,function(x){approx(x,ageVec,depthVec)$y})
 
@@ -145,12 +154,30 @@ createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq_len(nrow(ensThick)
   if(is.na(addToLiPD)){
     return(list(ageDepthEns = ageDepthMat,summaryTable = summaryTable))
   }else{
+    stop("Add to LiPD not finished yet")
   model <- vector(mode = "list",length = 1)
 
-  model[[1]]$ensembleTable$values <- bind_cols(depthVec,ageEns)
+  model[[1]]$ensembleTable$ageEnsemble$values <- ageEns
+
   model[[1]]$methods$algorithm <- "varveR"
-  model[[1]]$summaryTable <- values
+  model[[1]]$summaryTable$values <- summaryTable
   }
-
-
 }
+
+#' @export
+#' @import Hmisc
+createDepth2AgeFunction <- function(ageDepthMat){
+depth <- ageDepthMat[,1]
+ae <- ageDepthMat[,-1]
+
+fout <- function(d2m){
+  ens <- apply(ae,2,function(x){Hmisc::approxExtrap(depth,x,d2m)$y})
+  med <- apply(ens,1,median, na.rm=TRUE)
+  return(list(ageEnsemble = ens, medianAge = med, depth = d2m))
+  }
+return(fout)
+}
+
+
+
+
