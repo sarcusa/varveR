@@ -132,7 +132,7 @@ for(i in 1:nEns){
 
 
 #' @export
-createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq(1,nrow(ensThick)), addToLiPD = NA,startAtZero = TRUE){
+createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq(1,nrow(ensThick)), addToLiPD = NA,startAtZero = TRUE,chronNum = 1,modelNum = NA){
   if(startAtZero){
   ensThick <- rbind(matrix(0,ncol = ncol(ensThick),nrow = 1), ensThick)
   }
@@ -154,13 +154,19 @@ createEnsembleAgeDepthModel <- function(ensThick,ageVec = seq(1,nrow(ensThick)),
   if(is.na(addToLiPD)){
     return(list(ageDepthEns = ageDepthMat,summaryTable = summaryTable))
   }else{
-    stop("Add to LiPD not finished yet")
-  model <- vector(mode = "list",length = 1)
+    if(is.na(modelNum)){
+      modelNum = length(L$chronData[[chronNum]]$model)+1
+    }
+  newModel <- vector(mode = "list",length = 1)
 
-  model[[1]]$ensembleTable$ageEnsemble$values <- ageEns
+  newModel$ensembleTable$ageEnsemble$values <- ageEns
 
-  model[[1]]$methods$algorithm <- "varveR"
-  model[[1]]$summaryTable$values <- summaryTable
+  newModel$methods$algorithm <- "varveR"
+  newModel$summaryTable$values <- summaryTable
+
+  L$chronData[[chronNum]]$model[[modelNum]] <- newModel
+  return(L)
+
   }
 }
 
