@@ -3,7 +3,7 @@
 #' @title Read varve thicknesses from shape file
 #' @description Pulls varve thicknesses and error codes from a shapefile counted in GIS
 #' @importFrom sf st_read
-#' @import dplyr tibble magrittr
+#' @import dplyr tibble magrittr tibble
 #' @param filename the path to a shape file
 #' @param codeCol name of the column of varve confidence ratings. Can be a single and or multiple strings in a vector. Default = c("conf","VarveID")
 #' @param markerCol name of the column of marker layer names. Can be a single and or multiple strings in a vector. Default = c("Marker","Markers")
@@ -13,10 +13,18 @@
 readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),varveTop = "top",scaleToThickness = NA){
   shape <-  sf::st_read(filename,quiet = TRUE)
 
-  varveCoords <- tibble::tibble(x1 = unlist(lapply(shape$geometry,"[[",1)),
-                            x2 = unlist(lapply(shape$geometry,"[[",2)),
-                            y1 = unlist(lapply(shape$geometry,"[[",3)),
-                            y2 = unlist(lapply(shape$geometry,"[[",4)))
+  #old way
+  #varveCoords <- tibble::tibble(x1 = unlist(lapply(shape$geometry,"[[",1)),
+                            # x2 = unlist(lapply(shape$geometry,"[[",2)),
+                            # y1 = unlist(lapply(shape$geometry,"[[",3)),
+                            # y2 = unlist(lapply(shape$geometry,"[[",4)))
+
+  varveCoords <- as.data.frame(t(purrr::map_dfc(shape$geometry,magrittr::extract,1:4)))
+  names(varveCoords) <- c("x1","x2","y1","y2")
+
+  goodRows <- which(rowSums(is.finite(as.matrix(varveCoords)))==4)#remove nonfinite values
+
+
 
 
   #pull out varve code metadata
