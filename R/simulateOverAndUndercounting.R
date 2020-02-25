@@ -1,4 +1,13 @@
+#' Translate varve codes to over and undercounting probabilities
+#'
+#' @param compSeq a composite sequence data.frame
+#' @param translationTable a data.frame that translates varve codes to over and undercountin probabilities
+#' @param baselineProb what baseline probability should be used in the absence of varve cides
+#'
+#' @return
 #' @export
+#'
+#' @examples
 translateCodesToProbabilities <- function(compSeq,translationTable,baselineProb = 0.05){
 compSeq$ocProb <- baselineProb -> compSeq$ucProb
 for(i in 1:nrow(translationTable)){
@@ -9,6 +18,12 @@ for(i in 1:nrow(translationTable)){
 return(compSeq)
 }
 
+#' simulate over and under counting
+#'
+#' @param compSeq a composite sequence data.frame
+#'
+#' @return simulate counts
+#' @export
 simulateOverAndUndercounting = function(compSeq){
 
   OCP <- compSeq$ocProb
@@ -92,8 +107,6 @@ simulateOverAndUndercounting = function(compSeq){
   #remove NAs.
   newThicks=na.omit(newThicks)
 
-  #NOTE: THIS ERROR GETS VIOLATED OCCASIONALLY (1/200 simulations), for reasons that aren't clear to me. I don't think it's too important. Yet. OK - I think I know why, when the first one is Undercounted, and the second is overcounted. It handles it properly, but doesn't register 2 as overcounted. The total thicknesses are the same, so I'm ok with this, for now at least.
-
   #   #do some checking!
   #   if(length(newThicks)-counter != length(thicks)){
   #     stop("Counter & newThick lenghts don't line up")
@@ -108,7 +121,15 @@ simulateOverAndUndercounting = function(compSeq){
 }
 
 
+#' Generate thickness ensemble
+#'
+#' @param compSeq a data.frame of composited sequence
+#' @param nEns number of ensembles
+#'
+#' @return a matrix of thickness ensemble members
 #' @export
+#'
+#' @examples
 generateThicknessEnsemble <- function(compSeq,nEns = 1000){
   ensThick <- matrix(NA,nrow = 2*nrow(compSeq),ncol = nEns)
   pb <- txtProgressBar(min=1,max=nEns,style=3)

@@ -3,7 +3,7 @@
 #' @title Read varve thicknesses from shape file
 #' @description Pulls varve thicknesses and error codes from a shapefile counted in GIS
 #' @importFrom sf st_read
-#' @import dplyr tibble magrittr tibble
+#' @import dplyr tibble magrittr
 #' @param filename the path to a shape file
 #' @param codeCol name of the column of varve confidence ratings. Can be a single and or multiple strings in a vector. Default = c("conf","VarveID")
 #' @param markerCol name of the column of marker layer names. Can be a single and or multiple strings in a vector. Default = c("Marker","Markers")
@@ -11,6 +11,7 @@
 #' @param scaleToThickness Value to scale the sum of the measurements. NA retains the scale in the .shp file.
 #' @return A data.frame with the varve data
 readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),varveTop = "top",scaleToThickness = NA){
+
   shape <-  sf::st_read(filename,quiet = TRUE)
 
   #old way
@@ -260,12 +261,6 @@ return(combSeq)
 
 }
 
-#' @export
-plotCompositeSequence <- function(compSeq){
-  colourCount = length(unique(compSeq$section))
-  getPalette = colorRampPalette(RColorBrewer::brewer.pal(9, "Set1"))
 
-  return(ggplot(compSeq)+geom_line(aes(x = count, y = thick,color=section))+theme_bw()+scale_colour_manual(values = getPalette(colourCount)))
-}
 
 
