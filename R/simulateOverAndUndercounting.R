@@ -1,3 +1,53 @@
+#' simulate varve thickness for an uncounted(able) section
+#'
+#' @param totalThickness the total thickness of the section
+#' @param exampleVarves a (ideally long) series of varves to inform the emulation
+#'
+#' @return emulated varves
+#' @export
+emulateVarveThickness <- function(totalThickness,exampleVarves){
+  if(any(is.na(exampleVarves))){
+  exampleVarves <- exampleVarves[-which(is.na(exampleVarves))]
+  }
+  #pick a random start point
+  si <- sample.int(length(exampleVarves),size = 1)
+  #calculate a cumulative sum
+  ls <- c(exampleVarves[si:length(exampleVarves)],exampleVarves)
+  cs <- cumsum(ls)
+  #find the closest value
+  ei <- which.min(abs(cs-totalThickness))
+  #extract the series
+  ss <- ls[1:ei]
+
+  #get an adjustment ratio
+  ar <- sum(ss)/totalThickness
+
+  if(abs(ar-1)>0.7){
+    print(ar)
+    stop("this is too big")
+  }
+
+  #adjust to match the thickness
+  ss <- ss/ar
+
+  return(ss)
+}
+
+
+createTableChunks <- function(rowInd,simVarves,compSeq){
+  #plug these into compSeq
+  tableChunk <- dplyr::slice(compSeq,rep(rowInd,each = length(simVarves)))
+  #replace key values
+  tableChunk$count <-  tableChunk$sectionCount <- NA
+  tableChunk$ucProb <- tableChunk$ocProb <- 0
+  #tableChunk$varveCode <- "simulated"
+  tableChunk$thick <- simVarves
+
+  return(tableChunk)
+}
+
+
+
 #' Translate varve codes to over and undercounting probabilities
 #'
 #' @param compSeq a composite sequence data.frame
@@ -26,10 +76,50 @@ return(compSeq)
 #' @export
 simulateOverAndUndercounting = function(compSeq){
 
+
+
+  #see if there are any special varve codes to deal with
+  if(any(compSeq$ucProb<0 | compSeq$ocProb<0)){
+    #deal with gaps (special code -3)
+    compSeq <- dplyr::filter(compSeq,ucProb>-3 & ocProb>-3)
+
+    #check for sections to simulate
+    if(any(compSeq$ucProb==-2 | compSeq$ocProb==-2)){
+      ts <- which(compSeq$ucProb==-2 | compSeq$ocProb==-2)
+      sampleVarves <- compSeq$thick[-ts] #get sample varves
+      #simulate thicknesses
+      simVarves <- purrr::map(compSeq$thick[ts],emulateVarveThickness,sampleVarves)
+
+      #create new rows for the composite sequence
+      tableChunks <- purrr::map2(ts,simVarves,createTableChunks,compSeq)
+
+      #and plug them into the compSeq
+      for(ri in seq(length(ts),1,by = -1)){#go backwards to keep rows in right spot
+        #get section above
+        above <- compSeq[1:(ts[ri]-1), ]
+        #and below
+        below <- compSeq[(ts[ri]+1):nrow(compSeq),]
+
+        #and squeeze it in
+        compSeq <- bind_rows(above, tableChunks[[ri]],below)
+      }
+
+      #now update counts and sample counts.
+
+
+
+
+    }
+
+
+
+
+
+  }
+
   OCP <- compSeq$ocProb
   UCP <- compSeq$ucProb
   thicks <- compSeq$thick
-
 
   if(length(OCP)==1){#if there's only one OCP, replicate over length
     OCP=matrix(data=OCP,ncol=1,nrow=length(thicks))
