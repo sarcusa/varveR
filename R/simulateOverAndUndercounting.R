@@ -94,7 +94,7 @@ simulateOverAndUndercounting = function(compSeq){
 
 
   #see if there are any special varve codes to deal with
-  if(any(compSeq$ucProb<0 | compSeq$ocProb<0)){
+  if(any(compSeq$ucProb < 0 | compSeq$ocProb<0)){
     #deal with gaps (special code -3)
     compSeq <- dplyr::filter(compSeq,ucProb>-3 & ocProb>-3)
 
