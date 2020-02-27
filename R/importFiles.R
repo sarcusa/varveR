@@ -10,7 +10,7 @@
 #' @param varveTop where is the top of the varve sequence on the shape file. Options are "top","bottom","left","right". Default = "top".
 #' @param scaleToThickness Value to scale the sum of the measurements. NA retains the scale in the .shp file.
 #' @return A data.frame with the varve data
-readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),varveTop = "top",scaleToThickness = NA){
+readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),tiePointCol = c("TiePoint"), varveTop = "top",scaleToThickness = NA){
 
   shape <-  sf::st_read(filename,quiet = TRUE)
 
@@ -50,6 +50,17 @@ readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol 
     print(names(shape))
   }
 
+  #pull out tie points (markers between cores)
+  hasTiePoint <- FALSE
+  if(any(names(shape) %in% tiePointCol)){
+    gc <- which(names(shape) %in% tiePointCol)
+    varveCoords$tiePoint = shape[[gc[1]]]
+    hasTiePoint <- TRUE
+  }else{
+    warning(paste(filename,"- no tie points layers. Other names include:"))
+    print(names(shape))
+  }
+
   if(varveTop == "top"){
     varves <- varveCoords %>%
       dplyr::arrange(desc(y1)) %>%
@@ -84,6 +95,10 @@ readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol 
     out <- dplyr::select(varves,count,thick,varveCode)
   }else{
     out <- dplyr::select(varves,count,thick)
+  }
+
+  if(hasTiePoint){
+    out$tiePoint <- varves$tiePoint
   }
 
 

@@ -1,3 +1,68 @@
+#' simulate varve thickness for an uncounted(able) section
+#'
+#' @param totalThickness the total thickness of the section
+#' @param exampleVarves a (ideally long) series of varves to inform the emulation
+#'
+#' @return emulated varves
+#' @export
+emulateVarveThickness <- function(totalThickness,exampleVarves){
+  if(any(is.na(exampleVarves))){
+  exampleVarves <- exampleVarves[-which(is.na(exampleVarves))]
+  }
+
+  ar <- 0
+  counter <- 0
+  while(ar<0.7){
+    counter <- counter+1
+  #pick a random start point
+  si <- sample.int(length(exampleVarves),size = 1)
+  #calculate a cumulative sum
+  ls <- c(exampleVarves[si:length(exampleVarves)],exampleVarves)
+  cs <- cumsum(ls)
+  #find the closest value
+  ei <- which.min(abs(cs-totalThickness))
+  #extract the series
+  ss <- ls[1:ei]
+
+  #get an adjustment ratio
+  ar <- sum(ss)/totalThickness
+
+  if(counter>100){
+    print(ar)
+    print(length(ss))
+    stop("this is too small")
+  }
+  }
+
+  #adjust to match the thickness
+  ss <- ss/ar
+
+  return(ss)
+}
+
+
+#' create table chunks to insert into a composite sequence
+#'
+#' @param rowInd row index for chunks to create
+#' @param simVarves the simulated varves for each chunk
+#' @param compSeq the composite sequence to work with
+#'
+#' @return
+#' @export
+createTableChunks <- function(rowInd,simVarves,compSeq){
+  #plug these into compSeq
+  tableChunk <- dplyr::slice(compSeq,rep(rowInd,each = length(simVarves)))
+  #replace key values
+  tableChunk$count <-  tableChunk$sectionCount <- NA
+  tableChunk$ucProb <- tableChunk$ocProb <- 0
+  #tableChunk$varveCode <- "simulated"
+  tableChunk$thick <- simVarves
+
+  return(tableChunk)
+}
+
+
+
 #' Translate varve codes to over and undercounting probabilities
 #'
 #' @param compSeq a composite sequence data.frame
@@ -26,10 +91,45 @@ return(compSeq)
 #' @export
 simulateOverAndUndercounting = function(compSeq){
 
+
+
+  #see if there are any special varve codes to deal with
+  if(any(compSeq$ucProb<0 | compSeq$ocProb<0)){
+    #deal with gaps (special code -3)
+    compSeq <- dplyr::filter(compSeq,ucProb>-3 & ocProb>-3)
+
+    #check for sections to simulate
+    if(any(compSeq$ucProb==-2 | compSeq$ocProb==-2)){
+      ts <- which(compSeq$ucProb==-2 | compSeq$ocProb==-2)
+      sampleVarves <- compSeq$thick[-ts] #get sample varves
+      #simulate thicknesses
+      simVarves <- purrr::map(compSeq$thick[ts],emulateVarveThickness,sampleVarves)
+
+      #create new rows for the composite sequence
+      tableChunks <- purrr::map2(ts,simVarves,createTableChunks,compSeq)
+
+      #and plug them into the compSeq
+      for(ri in seq(length(ts),1,by = -1)){#go backwards to keep rows in right spot
+        #get section above
+        above <- compSeq[1:(ts[ri]-1), ]
+        #and below
+        below <- compSeq[(ts[ri]+1):nrow(compSeq),]
+
+        #and squeeze it in
+        compSeq <- bind_rows(above, tableChunks[[ri]],below)
+      }
+
+      #now update counts and sample counts.
+      compSeq <- compSeq %>%
+        mutate(count = seq_along(thick)) %>%
+        group_by(section) %>%
+        mutate(sectionCounts = seq_along(count))
+    }
+  }
+
   OCP <- compSeq$ocProb
   UCP <- compSeq$ucProb
   thicks <- compSeq$thick
-
 
   if(length(OCP)==1){#if there's only one OCP, replicate over length
     OCP=matrix(data=OCP,ncol=1,nrow=length(thicks))
@@ -115,7 +215,12 @@ simulateOverAndUndercounting = function(compSeq){
     stop("The thicknesses don't sum to the same number")
   }
 
-  out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi)
+  if("tiePoint" %in% names(compSeq)){
+    out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi,newTiePoint = compSeq$tiePoint[old2new])
+  }else{
+    out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi,newTiePoint = rep(NA,times = length(newThicks)))
+  }
+
   return(out)
 
 }
@@ -131,19 +236,23 @@ simulateOverAndUndercounting = function(compSeq){
 #'
 #' @examples
 generateThicknessEnsemble <- function(compSeq,nEns = 1000){
-  ensThick <- matrix(NA,nrow = 2*nrow(compSeq),ncol = nEns)
+  ensThick <- tiePoints <- matrix(NA,nrow = 2*nrow(compSeq),ncol = nEns)
   pb <- txtProgressBar(min=1,max=nEns,style=3)
 
 for(i in 1:nEns){
   thisEns <- simulateOverAndUndercounting(compSeq)
   ensThick[1:length(thisEns$newThicks),i] <- thisEns$newThicks
+  tiePoints[1:length(thisEns$newThicks),i] <- thisEns$newTiePoint
   setTxtProgressBar(pb,i)
 
 }
 
   #trim rows of all NaNs
+  tiePoints <- tiePoints[-which(rowSums(!is.na(ensThick))==0),]
+
   ensThick <- ensThick[-which(rowSums(!is.na(ensThick))==0),]
-  return(ensThick)
+
+  return(list(ensThick = ensThick,tiePoints = tiePoints))
 }
 #
 # library(geoChronR)
