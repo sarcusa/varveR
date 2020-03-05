@@ -215,8 +215,14 @@ simulateOverAndUndercounting = function(compSeq){
     stop("The thicknesses don't sum to the same number")
   }
 
+
+
   if("tiePoint" %in% names(compSeq)){
-    out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi,newTiePoint = compSeq$tiePoint[old2new])
+    #check tiepoints
+    tp <- compSeq$tiePoint[old2new]
+    dml <- which(duplicated(tp)&!is.na(tp))#remove duplicated tiepoints
+    tp[dml] <- NA
+    out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi,newTiePoint = tp)
   }else{
     out = list(newThicks=newThicks,old2new=old2new,wasUCi=wasUCi,wasOCi=wasOCi,UCi=UCi,OCi=OCi,newTiePoint = rep(NA,times = length(newThicks)))
   }
@@ -242,7 +248,7 @@ generateThicknessEnsemble <- function(compSeq,nEns = 1000){
 for(i in 1:nEns){
   thisEns <- simulateOverAndUndercounting(compSeq)
   ensThick[1:length(thisEns$newThicks),i] <- thisEns$newThicks
-  tiePoints[1:length(thisEns$newThicks),i] <- thisEns$newTiePoint
+  tiePoints[1:length(thisEns$newTiePoint),i] <- thisEns$newTiePoint
   setTxtProgressBar(pb,i)
 
 }
