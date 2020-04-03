@@ -18,4 +18,5 @@ Imports: purrr,
     sf,
     tibble,
     magrittr,
-    Hmisc
+    Hmisc,
+    matrixStats

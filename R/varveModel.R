@@ -40,8 +40,16 @@ return(core)
 
 
 
-#library(matrixStats)
-
+#' model varve thickness
+#'
+#' @param ensList
+#' @param nSim
+#' @param allMarkerLayers
+#' @import matrixStats purrr
+#' @return
+#' @export
+#'
+#' @examples
 varveModel <- function(ensList,nSim = 100,  allMarkerLayers = NA){
 
 
@@ -53,7 +61,7 @@ varveModel <- function(ensList,nSim = 100,  allMarkerLayers = NA){
 
   #need a list of all marker layers in order
   if(is.na(allMarkerLayers)){
-  allMarkerLayers = as.character(na.omit(unique(c(purrr::flatten(ensList)$tiePoints))))
+  allMarkerLayers <- as.character(na.omit(unique(c(purrr::flatten(ensList)$tiePoints))))
   }
 
     #setup Post of markerLayers
@@ -457,7 +465,7 @@ varveModel <- function(ensList,nSim = 100,  allMarkerLayers = NA){
   }
 
   #return the output
-  out <- list(compMat,corePost)
+  out <- list(compMat,corePost,MLpostAge)
 
   return(out)
 
