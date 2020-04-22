@@ -260,11 +260,7 @@ for(i in 1:nEns){
 
   return(list(ensThick = ensThick,tiePoints = tiePoints))
 }
-#
-# library(geoChronR)
-#  plotTimeseriesEnsRibbons(X = seq(1,2504),Y = test) %>%
-#  plotTimeseriesEnsLines(X = seq(1,2504),Y = test,maxPlotN = 2,color = "red")
-# ensThick <- ensThick*(1500/sum(ensThick[,1],na.rm = TRUE))
+
 
 
 #' @export

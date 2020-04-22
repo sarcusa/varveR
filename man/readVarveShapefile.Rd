@@ -5,8 +5,8 @@
 \title{Read varve thicknesses from shape file}
 \usage{
 readVarveShapefile(filename, codeCol = c("conf", "VarveID"),
-  markerCol = c("Marker", "Markers"), varveTop = "top",
-  scaleToThickness = NA)
+  markerCol = c("Marker", "Markers"), tiePointCol = c("TiePoint"),
+  varveTop = "top", scaleToThickness = NA)
 }
 \arguments{
 \item{filename}{the path to a shape file}
