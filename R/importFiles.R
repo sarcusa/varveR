@@ -10,9 +10,9 @@
 #' @param varveTop where is the top of the varve sequence on the shape file. Options are "top","bottom","left","right". Default = "top".
 #' @param scaleToThickness Value to scale the sum of the measurements. NA retains the scale in the .shp file.
 #' @return A data.frame with the varve data
-readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers"),tiePointCol = c("TiePoint"), varveTop = "top",scaleToThickness = NA){
+readVarveShapefile <- function(filename,codeCol = c("conf","VarveID"),markerCol = c("Marker","Markers", "Markers2", "marker", "markers"),tiePointCol = c("TiePoint", "TiePoints", "tiePoint", "tiepoint"), varveTop = "top",scaleToThickness = NA){
 
-  shape <-  sf::st_read(filename,quiet = TRUE)
+  shape <-  sf::st_read(filename,quiet = TRUE, stringsAsFactors = TRUE)
 
   #old way
   #varveCoords <- tibble::tibble(x1 = unlist(lapply(shape$geometry,"[[",1)),
