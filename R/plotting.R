@@ -7,6 +7,15 @@
 #' @return a
 #' @export
 plotSections <- function(varveSequenceList,output = NA){
+ 
+ for(i in 1:length(varveSequenceList)){
+    
+    if(anyNA(varveSequenceList[[i]]$varveCode)){
+      print(paste0("check slide ", names(varveSequenceList[i])," because varveID looks wrong around varve ", which(is.na(varveSequenceList[[i]]$varveCode))))
+    }
+    
+  }
+ 
  allPlots <- purrr::map2(varveSequenceList,names(varveSequenceList),plotVarveSection)
  if(!is.na(output)){
    purrr::map2(paste0(file.path(tempdir(),names(varveSequenceList)),".pdf"),allPlots,ggsave)
