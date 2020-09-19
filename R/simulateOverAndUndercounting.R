@@ -211,7 +211,7 @@ simulateOverAndUndercounting = function(compSeq){
   #   if(length(newThicks)-counter != length(thicks)){
   #     stop("Counter & newThick lenghts don't line up")
   #   }
-  if( abs(sum(thicks)-sum(newThicks))>0.0001 ){
+  if( abs(sum(thicks, na.rm = T)-sum(newThicks))>0.0001 ){
     stop("The thicknesses don't sum to the same number")
   }
 
