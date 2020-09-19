@@ -48,7 +48,7 @@ createCoreInputForModel <- function(ensOut,ocPrior = 0.05, ucPrior = 0.05, mlPri
 #'
 #' @param ensList
 #' @param nSim
-#' @param allMarkerLayers
+#' @param allMarkerLayers Note: the model will likely fail if this contains 3 or less layers
 #' @import matrixStats purrr
 #' @return
 #' @export
