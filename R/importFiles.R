@@ -215,7 +215,7 @@ combineSectionsByMarkerLayer <- function(sortedSequence){
   mln <- na.omit(unique(allCounts$markers))
 
   #see if there are multiple marker layers that connect sections
-  nMark <- allCounts %>%
+  tryCatch({nMark <- allCounts %>%
     group_by(section) %>%
     summarize(markerLayers = sum(!is.na(markers))) %>%
     arrange(match(section,sections))
@@ -239,7 +239,7 @@ combineSectionsByMarkerLayer <- function(sortedSequence){
       mln <- setdiff(mln,sample(extraMarks[i,],1)) #remove one at random.
     }
   }
-
+},  error = function(e){cat("Error:", conditionMessage(e), " did not have multiple marker layers in one section")})
 #start at the top to the first markerlayer
   sp <- min(which(allCounts$markers==mln[1]))
   combSeq <- allCounts[1:sp,]
